@@ -62,6 +62,28 @@ data %>%
     )
 
 data %>%
+  filter(
+    region == "South Africa",
+    !(state %in% c("case_mortality_rate", "n_confirmed"))
+  ) %>%
+  ggplot() +
+    aes(date, n, fill = state) +
+    geom_col()
+
+data %>%
+  filter(region == "South Africa", state != "case_mortality_rate") %>%
+  spread(state, n) %>%
+  mutate(
+    prop_dead      = n_deaths       / n_confirmed,
+    prop_active    = n_active_cases / n_confirmed,
+    prop_recovered = n_recovered    / n_confirmed
+  ) %>%
+  filter(n_confirmed > 100) %>%
+  ggplot() +
+    aes(date, n_confirmed) +
+    geom_line()
+
+data %>%
   filter(region == "South Africa", state == "n_confirmed") %>%
   spread(state, n) %>%
   select(date, n_confirmed) %>%
@@ -118,6 +140,7 @@ data %>%
 
 data %>%
   select(region, sub_region, date, state, n) %>%
+  mutate(n = ifelse(is.nan(n) | is.na(n), 0, n)) %>%
   filter(region %in% c("US", "South Africa", "Italy", "Spain", "China")) %>%
   group_by(region, date, state) %>%
   summarise(n = sum(n)) %>%
@@ -131,9 +154,35 @@ data %>%
   ggplot() +
     aes(n_confirmed, n_new, colour = region) +
     geom_line(alpha = 0.5) +
-    geom_smooth(size = 1, se = FALSE) +
-    scale_x_log10() +
+    geom_smooth(size = 0.75, se = FALSE) +
+    scale_x_log10(lim = c(100, 1000000)) +
     scale_y_log10() +
+    geom_abline(intercept = 0, slope = 1, colour = "grey25", linetype = "dashed")
+
+data %>%
+  select(region, sub_region, date, state, n) %>%
+  mutate(n = ifelse(is.nan(n) | is.na(n), 0, n)) %>%
+  filter(region  == "South Africa") %>%
+  group_by(region, date, state) %>%
+  summarise(n = sum(n)) %>%
+  spread(state, n) %>%
+  select(region, date, n_confirmed) %>%
+  ungroup() %>%
+  group_by(region) %>%
+  arrange(date) %>%
+  mutate(n_new = n_confirmed - lag(n_confirmed)) %>%
+  mutate(n_new = ifelse(is.na(n_new), 0, n_new)) %>%
+  #mutate(n_new_3d_avg = pmap_dbl(list(lag(n_new), n_new, lead(n_new)),
+  #  ~mean(c(..1, ..2, ..3))
+  #)) %>%
+  ggplot() +
+    aes(n_confirmed, n_new) +
+    #aes(n_confirmed, n_new_3d_avg) +
+    geom_point(size = 1.5, alpha = 0.5) +
+    geom_line(alpha = 0.5) +
+    geom_smooth(size = 0.75, se = FALSE) +
+    scale_x_log10(lim = c(1, 10000)) +
+    scale_y_log10(lim = c(1, 10000)) +
     geom_abline(intercept = 0, slope = 1, colour = "grey25", linetype = "dashed")
 
 ZA_models <- data %>%
