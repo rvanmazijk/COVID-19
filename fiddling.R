@@ -141,7 +141,7 @@ data %>%
 data %>%
   select(region, sub_region, date, state, n) %>%
   mutate(n = ifelse(is.nan(n) | is.na(n), 0, n)) %>%
-  filter(region %in% c("US", "South Africa", "Italy", "Spain", "China")) %>%
+  filter(region %in% c("US", "South Africa", "Italy", "Spain", "UK")) %>%
   group_by(region, date, state) %>%
   summarise(n = sum(n)) %>%
   spread(state, n) %>%
@@ -153,8 +153,8 @@ data %>%
   mutate(n_new = ifelse(is.na(n_new), 0, n_new)) %>%
   ggplot() +
     aes(n_confirmed, n_new, colour = region) +
-    geom_line(alpha = 0.5) +
-    geom_smooth(size = 0.75, se = FALSE) +
+    geom_line() +
+    #geom_smooth(size = 0.75, se = FALSE, alpha = 0.25) +
     scale_x_log10(lim = c(100, 1000000)) +
     scale_y_log10() +
     geom_abline(intercept = 0, slope = 1, colour = "grey25", linetype = "dashed")
@@ -162,7 +162,7 @@ data %>%
 data %>%
   select(region, sub_region, date, state, n) %>%
   mutate(n = ifelse(is.nan(n) | is.na(n), 0, n)) %>%
-  filter(region  == "South Africa") %>%
+  filter(region == "South Africa") %>%
   group_by(region, date, state) %>%
   summarise(n = sum(n)) %>%
   spread(state, n) %>%
@@ -184,13 +184,6 @@ data %>%
     scale_x_log10(lim = c(1, 10000)) +
     scale_y_log10(lim = c(1, 10000)) +
     geom_abline(intercept = 0, slope = 1, colour = "grey25", linetype = "dashed")
-
-ZA_models <- data %>%
-  filter(region == "South Africa") %>%
-  mutate(date = as.numeric(date)) %>%
-  split(.$state) %>%
-  map(~lm(exp(n) ~ date, .))
-visreg::visreg(ZA_models$n_confirmed, trans = exp)
 
 data %>%
   filter(region == "Italy", state != "case_mortality_rate") %>%
